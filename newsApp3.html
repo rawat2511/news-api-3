@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>News App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <style>
+        * {
+            padding: 0px;
+            margin: 0px;
+            font-family: 'Roboto', sans-serif;
+        }
+        #container, form, .btn {
+            max-width: 800px;
+            margin: auto;
+        }
+        .card {
+            width: 96%;
+            margin: 20px auto;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid black;
+        }
+        .image {
+            width: 100%;
+            border-radius: 8px;
+        }
+        .title {
+            font-family: 'Nunito Sans', sans-serif;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .author {
+            color: #35144f;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .date {
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .image {
+            margin-bottom: 20px;
+        }
+        .content {
+            font-size: 120%;
+            font-weight: 100;
+            line-height: 1.4;
+        }
+        form {
+            display: flex;
+            width: 96%;
+            margin: 20px auto;
+            margin-bottom: 40px;
+            border: 1px solid rgb(138, 135, 135);
+            border-radius: 6px;
+        }
+        #topic {
+            font-size: 18px;
+            flex-grow: 1;
+            outline: none;
+            border: none;
+            padding: 10px;
+            border-top-left-radius: 6px;
+            border-bottom-left-radius: 6px;
+        }
+        #search {
+            width: 20%;
+            outline: none;
+            border: none;
+            cursor: pointer;
+            background-color: lightseagreen;
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
+            font-size: 18px;
+        }
+        button {
+            padding: 10px 20px;
+        }
+        .btn {
+            display: flex;
+            padding: 25px;
+        }
+        .previous, .next {
+            flex-grow: 1;
+            cursor: pointer;
+        }
+        .current {
+            flex-grow: 2;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <form id="form">
+        <input type="text" name="topic" id="topic">
+        <input type="submit" value="SEARCH" id="search">
+    </form>
+    <div id="container"></div>
+    <div id="pagination"></div>
+    <script>
+        
+        var currentPage = 1;
+        var limit = 5;
+
+        var pagination = function(currentPage){
+
+            var btns = document.createElement("div");
+            btns.className = "btn";
+
+            var paginationTag = document.getElementById("pagination");
+            paginationTag.textContent = "";
+            var previous = document.createElement("button");
+            previous.className = "previous";
+            previous.textContent = "Previous";
+            previous.name = currentPage-1;
+            if( currentPage === 1 ){
+                previous.disabled = true;
+            }
+
+            var current = document.createElement("button");
+            current.className = "current";
+            current.textContent = currentPage;
+
+            var next = document.createElement("button");
+            next.className = "next";
+            next.textContent = "Next";
+            next.name = currentPage + 1;
+
+            btns.append(previous, current, next);
+            document.body.append(btns);
+            paginationTag.append( btns );
+        }
+
+
+        window.addEventListener("load", function(){
+            var form = document.getElementById("form");
+            form.addEventListener("submit", onSubmit);
+        })
+
+        function createCard(news){
+
+            container.innerHTML = "";
+                for( var i = 0; i < limit; i++ ){
+                    var card = document.createElement("div");
+                    card.className = "card";
+
+                    var title = document.createElement("h1");
+                    title.textContent = news[i].title;
+                    title.className = "title";
+                    card.appendChild(title);
+
+                    var author = document.createElement("p");
+                    author.className = "author";
+                    author.textContent = news[i].author;
+                    card.appendChild(author);
+
+                    var date = document.createElement("p");
+                    date.className = "date";
+                    date.textContent = news[i].publishedAt.split("T")[0];
+                    card.appendChild(date);
+
+                    var img = document.createElement("img");
+                    img.src = news[i].urlToImage;
+                    img.className = "image";
+                    card.appendChild(img);
+                    
+                    var cont = news[i].content.split("[");
+
+                    var content = document.createElement("p");
+                    content.className = "content";
+                    var para = cont[0];
+                    var span = "[" + cont[1];
+                    content.innerHTML = `${para} <a href="${news[i].url}">${span}</a>`;
+                    
+                    card.appendChild(content);
+
+                    container.appendChild(card);
+                }
+        }
+
+        function fetchQuerry(query){
+
+            var url = `https://newsapi.org/v2/everything?q=${query}&page=${currentPage}&limit=${limit}&apiKey=d263154163754ae098cab0e7c48ee242`;
+            
+
+            var req = new Request(url);
+
+            fetch(req)
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(res){
+                var news = res.articles;
+                createCard(news);
+            });
+        }
+
+
+        function onSubmit(){
+            event.preventDefault();
+
+            currentPage = 1;
+            pagination(currentPage);
+            
+            var btn = document.getElementsByClassName("btn")[0];
+            btn.addEventListener("click", handlePagination);
+
+            var query = document.getElementById("topic").value;
+            fetchQuerry(query);
+        }
+
+        async function handlePagination(){
+            try {
+
+                var pageNumber = parseInt(event.target.name);
+                currentPage = pageNumber;
+                var query = document.getElementById("topic").value;
+                fetchQuerry(query);
+                var pre = document.getElementsByClassName("previous")[0];
+                var curr = document.getElementsByClassName("current")[0];
+                var next = document.getElementsByClassName("next")[0];
+                pre.name = currentPage - 1;
+                curr.name = currentPage;
+                next.name = currentPage + 1;
+                curr.textContent = currentPage;
+
+                if( currentPage == 1){
+                    pre.disabled = true;
+                }
+                else{
+                    pre.disabled = false;
+                }
+                setTimeout( function () {
+                    window.scrollTo(0, 0);
+                },1000);
+            }
+
+            catch{
+                console.log("Error");
+            }
+        }
+
+    </script>
+</body>
+</html>
